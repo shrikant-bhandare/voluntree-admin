@@ -47,6 +47,8 @@ interface PaymentTransaction {
   eventName?: string;
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "ngos" | "events" | "moderation" | "payments" | "users" | "settings">("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,7 +90,7 @@ export default function AdminDashboard() {
     if (!token) return;
 
     // 1. Fetch real events
-    fetch("http://localhost:3000/events")
+    fetch(`${API_BASE_URL}/events`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -108,7 +110,7 @@ export default function AdminDashboard() {
       .catch(err => console.error("Error fetching live events:", err));
 
     // 2. Fetch real safety reports
-    fetch("http://localhost:3000/reports", {
+    fetch(`${API_BASE_URL}/reports`, {
       headers: { "Authorization": `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -130,7 +132,7 @@ export default function AdminDashboard() {
       .catch(err => console.error("Error fetching live safety reports:", err));
 
     // 3. Fetch real payment transactions
-    fetch("http://localhost:3000/payments/history", {
+    fetch(`${API_BASE_URL}/payments/history`, {
       headers: { "Authorization": `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -153,7 +155,7 @@ export default function AdminDashboard() {
       .catch(err => console.error("Error fetching live payment history:", err));
 
     // 4. Fetch real NGO verifications
-    fetch("http://localhost:3000/ngos/pending", {
+    fetch(`${API_BASE_URL}/ngos/pending`, {
       headers: { "Authorization": `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -174,7 +176,7 @@ export default function AdminDashboard() {
       .catch(err => console.error("Error fetching live NGOs:", err));
 
     // 5. Fetch real platform users
-    fetch("http://localhost:3000/auth/users", {
+    fetch(`${API_BASE_URL}/auth/users`, {
       headers: { "Authorization": `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -210,7 +212,7 @@ export default function AdminDashboard() {
       const isEmail = identifier.includes("@");
       const body = isEmail ? { email: identifier } : { phoneNumber: identifier };
 
-      const res = await fetch("http://localhost:3000/auth/request-otp", {
+      const res = await fetch(`${API_BASE_URL}/auth/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -245,7 +247,7 @@ export default function AdminDashboard() {
         ? { email: identifier, code: otpCode } 
         : { phoneNumber: identifier, code: otpCode };
 
-      const res = await fetch("http://localhost:3000/auth/verify-otp", {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -291,7 +293,7 @@ export default function AdminDashboard() {
   const handleApproveNGO = async (id: string) => {
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:3000/ngos/${id}/verify`, {
+      const res = await fetch(`${API_BASE_URL}/ngos/${id}/verify`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -310,7 +312,7 @@ export default function AdminDashboard() {
   const handleRejectNGO = async (id: string) => {
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:3000/ngos/${id}/verify`, {
+      const res = await fetch(`${API_BASE_URL}/ngos/${id}/verify`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -335,7 +337,7 @@ export default function AdminDashboard() {
     else if (targetEvent.status === "FEATURED") nextStatus = "SUSPENDED";
 
     try {
-      const res = await fetch(`http://localhost:3000/events/${id}/status`, {
+      const res = await fetch(`${API_BASE_URL}/events/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -355,7 +357,7 @@ export default function AdminDashboard() {
   const handleResolveReport = async (id: string) => {
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:3000/reports/${id}/resolve`, {
+      const res = await fetch(`${API_BASE_URL}/reports/${id}/resolve`, {
         method: "PATCH",
         headers: { "Authorization": `Bearer ${token}` },
       });
@@ -372,7 +374,7 @@ export default function AdminDashboard() {
     if (!token) return;
     try {
       // Suspend the event first
-      const resStatus = await fetch(`http://localhost:3000/events/${eventId}/status`, {
+      const resStatus = await fetch(`${API_BASE_URL}/events/${eventId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -395,7 +397,7 @@ export default function AdminDashboard() {
     if (!token) return;
     const nextBanStatus = !currentBanStatus;
     try {
-      const res = await fetch(`http://localhost:3000/auth/users/${id}/ban`, {
+      const res = await fetch(`${API_BASE_URL}/auth/users/${id}/ban`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
