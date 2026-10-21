@@ -8,6 +8,7 @@ import {
   NGO,
   PaymentTransaction,
 } from "../../types";
+import { formatMoney } from "../../utils/format";
 import { exportToCsv } from "../../utils/csvExporter";
 
 interface AnalyticsTabProps {
@@ -220,7 +221,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
               margin: "12px 0 0 0",
             }}
           >
-            ₹{totalRevenue.toLocaleString()}
+            {formatMoney(totalRevenue, "INR")}
           </h3>
           <span style={{ fontSize: "11px", color: "#94a3b8" }}>
             Successful donations, subscriptions & featured fees

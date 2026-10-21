@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { DEV_OTP_VISIBLE } from "../../config/constants";
 
 interface AuthModalProps {
   authStep: "identifier" | "otp";
@@ -133,7 +134,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {devOtp && (
+        {/* Only for a local API in a non-production build (WEB-21). */}
+        {DEV_OTP_VISIBLE && devOtp && (
           <div
             style={{
               backgroundColor: "rgba(234, 179, 8, 0.15)",
@@ -157,6 +159,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           >
             <div>
               <label
+                htmlFor="admin-identifier"
                 style={{
                   display: "block",
                   fontSize: "13px",
@@ -168,9 +171,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 Admin Email or Phone
               </label>
               <input
+                id="admin-identifier"
                 type="text"
                 required
-                placeholder="admin@vplatform.org or +91..."
+                autoComplete="username"
+                placeholder="Email address or +91 phone number"
                 value={identifier}
                 onChange={e => setIdentifier(e.target.value)}
                 style={{
@@ -181,7 +186,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   padding: "12px 14px",
                   borderRadius: "10px",
                   fontSize: "14px",
-                  outline: "none",
                 }}
               />
             </div>
@@ -211,6 +215,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           >
             <div>
               <label
+                htmlFor="admin-otp"
                 style={{
                   display: "block",
                   fontSize: "13px",
@@ -222,6 +227,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 6-Digit Security OTP
               </label>
               <input
+                id="admin-otp"
                 type="text"
                 required
                 inputMode="numeric"
@@ -242,7 +248,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   fontSize: "16px",
                   letterSpacing: "4px",
                   textAlign: "center",
-                  outline: "none",
                   fontWeight: "bold",
                 }}
               />

@@ -75,7 +75,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               marginTop: "4px",
             }}
           >
-            Active Community Roster
+            Registered users
           </span>
         </div>
 
@@ -117,7 +117,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               marginTop: "4px",
             }}
           >
-            Verified NGO Hosts
+            Organizer accounts
           </span>
         </div>
 

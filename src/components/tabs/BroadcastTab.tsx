@@ -10,9 +10,15 @@ interface BroadcastTabProps {
   setBroadcastBody: (val: string) => void;
   broadcastTargetRole: "ALL" | "VOLUNTEER" | "ORGANIZER";
   setBroadcastTargetRole: (role: "ALL" | "VOLUNTEER" | "ORGANIZER") => void;
+  /** Upper bound of recipients for the selected role, from /admin/stats. */
+  audienceCount: number | null;
   isBroadcasting: boolean;
   broadcastMsg: string;
   broadcastHistory: BroadcastNotification[];
+  historyHasMore: boolean;
+  /** Set when the history feed has never loaded (e.g. "HTTP 500"). */
+  historyError: string | null;
+  onRetryHistory: () => void;
   onSendBroadcast: (e: React.FormEvent) => void;
 }
 
@@ -23,9 +29,13 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
   setBroadcastBody,
   broadcastTargetRole,
   setBroadcastTargetRole,
+  audienceCount,
   isBroadcasting,
   broadcastMsg,
   broadcastHistory,
+  historyHasMore,
+  historyError,
+  onRetryHistory,
   onSendBroadcast,
 }) => {
   return (
@@ -94,6 +104,7 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
                 <button
                   key={role}
                   type="button"
+                  aria-pressed={broadcastTargetRole === role}
                   onClick={() => setBroadcastTargetRole(role)}
                   style={{
                     flex: 1,
@@ -120,10 +131,18 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
                 </button>
               ))}
             </div>
+            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "8px 0 0 0" }}>
+              Audience:{" "}
+              {audienceCount === null
+                ? "unknown (stats unavailable)"
+                : `up to ${audienceCount.toLocaleString("en-IN")} accounts`}{" "}
+              — banned accounts are excluded. You will be asked to confirm.
+            </p>
           </div>
 
           <div>
             <label
+              htmlFor="broadcast-title"
               style={{
                 display: "block",
                 fontSize: "13px",
@@ -134,6 +153,7 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
               Notification Title
             </label>
             <input
+              id="broadcast-title"
               type="text"
               required
               minLength={3}
@@ -149,13 +169,13 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
                 padding: "12px 14px",
                 borderRadius: "10px",
                 fontSize: "14px",
-                outline: "none",
               }}
             />
           </div>
 
           <div>
             <label
+              htmlFor="broadcast-body"
               style={{
                 display: "block",
                 fontSize: "13px",
@@ -166,6 +186,7 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
               Notification Message Body
             </label>
             <textarea
+              id="broadcast-body"
               required
               minLength={3}
               maxLength={500}
@@ -181,7 +202,6 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
                 padding: "12px 14px",
                 borderRadius: "10px",
                 fontSize: "14px",
-                outline: "none",
                 resize: "vertical",
               }}
             />
@@ -198,7 +218,8 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
               padding: "14px",
               fontSize: "14px",
               fontWeight: "bold",
-              cursor: "pointer",
+              cursor: isBroadcasting ? "wait" : "pointer",
+              opacity: isBroadcasting ? 0.6 : 1,
               boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
             }}
           >
@@ -228,8 +249,33 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
         >
           Sent Notifications Log
         </h3>
+        {historyHasMore && (
+          <p style={{ fontSize: "12px", color: "#fbbf24", margin: "-12px 0 16px 0" }}>
+            Showing the newest {broadcastHistory.length} broadcasts.
+          </p>
+        )}
 
-        {broadcastHistory.length === 0 ? (
+        {historyError && broadcastHistory.length === 0 ? (
+          <div role="alert" style={{ textAlign: "center", padding: "40px 0", color: "#fca5a5", fontSize: "14px" }}>
+            Could not load the broadcast history ({historyError}).{" "}
+            <button
+              type="button"
+              onClick={onRetryHistory}
+              style={{
+                marginLeft: "6px",
+                backgroundColor: "#1e293b",
+                border: "1px solid #334155",
+                color: "white",
+                padding: "4px 12px",
+                borderRadius: "6px",
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        ) : broadcastHistory.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
             <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>
               No system broadcasts sent yet.
@@ -305,6 +351,10 @@ export const BroadcastTab: React.FC<BroadcastTabProps> = ({
                 >
                   Sent by: {item.sentBy?.fullName || "Platform Admin"} (
                   {new Date(item.createdAt).toLocaleString()})
+                  {" · "}
+                  {typeof item.recipientCount === "number"
+                    ? `${item.recipientCount.toLocaleString("en-IN")} recipient${item.recipientCount === 1 ? "" : "s"}`
+                    : "recipient count not recorded"}
                 </div>
               </div>
             ))}

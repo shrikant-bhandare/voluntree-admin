@@ -3,9 +3,11 @@
  * Excel/LibreOffice when the file is opened. Names, titles and report reasons
  * in these exports are user-supplied, so neutralise them with a leading quote.
  */
-function csvCell(cell: string | number): string {
+export function csvCell(cell: string | number): string {
   let text = String(cell ?? "");
-  if (/^[=+\-@\t\r]/.test(text)) {
+  // Real numbers (e.g. -5) are data, not formulas — leave them unprefixed.
+  const isNumber = typeof cell === "number" && Number.isFinite(cell);
+  if (!isNumber && /^[=+\-@\t\r]/.test(text)) {
     text = `'${text}`;
   }
   return `"${text.replace(/"/g, '""')}"`;

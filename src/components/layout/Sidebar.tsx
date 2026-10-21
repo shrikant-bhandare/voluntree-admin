@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { initialsOf } from "../../utils/format";
 import { TabType } from "../../types";
 
 interface SidebarProps {
@@ -503,7 +504,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               color: "#6366f1",
             }}
           >
-            AD
+            {initialsOf(adminUser?.fullName)}
           </div>
           <div>
             <p
@@ -517,7 +518,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {adminUser?.fullName?.split(" ")[0] || "Admin"}
             </p>
             <p style={{ fontSize: "11px", color: "#94a3b8", margin: 0 }}>
-              {adminUser?.email || "admin@vplatform.org"}
+              {adminUser?.email || adminUser?.phoneNumber || ""}
             </p>
           </div>
         </div>

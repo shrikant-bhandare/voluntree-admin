@@ -1,24 +1,71 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { EventItem } from "../../types";
 import { exportToCsv } from "../../utils/csvExporter";
-import { nextAdminStatus } from "../../utils/eventStatus";
+import {
+  AdminEventAction,
+  adminEventActions,
+  eventStatusColors,
+} from "../../utils/eventStatus";
 
 interface EventDetailsModalProps {
   event: EventItem | null;
   onClose: () => void;
-  onToggleStatus: (id: string) => void;
+  onEventAction: (id: string, action: AdminEventAction) => void;
   onDeleteEvent: (id: string) => void;
 }
 
-export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
-  event,
-  onClose,
-  onToggleStatus,
-  onDeleteEvent,
-}) => {
-  if (!event) return null;
+export const EventDetailsModal: React.FC<EventDetailsModalProps> = props => {
+  if (!props.event) return null;
+  // Mounted only while open, so focus capture/return runs once per opening.
+  return <OpenEventDetailsModal {...props} event={props.event} />;
+};
+
+const OpenEventDetailsModal: React.FC<
+  EventDetailsModalProps & { event: EventItem }
+> = ({ event, onClose, onEventAction, onDeleteEvent }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // Focus moves into the dialog on open, Escape closes it, Tab stays inside,
+  // and focus returns to whatever opened it.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, []);
+
+  const titleId = `event-modal-title-${event.id}`;
 
   const handleExportRoster = () => {
     if (!event.applications || event.applications.length === 0) return;
@@ -34,7 +81,8 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     );
   };
 
-  const transition = nextAdminStatus(event.status);
+  const actions = adminEventActions(event.status);
+  const statusColors = eventStatusColors(event.status);
   const approvedApplications = event.applications
     ? event.applications.filter((app: any) => app.status === "APPROVED").length
     : null;
@@ -55,8 +103,17 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         zIndex: 9999,
         padding: "20px",
       }}
+      onMouseDown={e => {
+        // Backdrop click closes; clicks inside the dialog do not.
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         style={{
           backgroundColor: "#131a2c",
           border: "1px solid #334155",
@@ -73,7 +130,9 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
       >
         {/* Modal Close Button */}
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close event details"
           style={{
             position: "absolute",
             top: "24px",
@@ -147,24 +206,15 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                   padding: "3px 8px",
                   borderRadius: "6px",
                   fontWeight: "bold",
-                  backgroundColor:
-                    event.status === "FEATURED"
-                      ? "rgba(234, 179, 8, 0.15)"
-                      : event.status === "ACTIVE"
-                      ? "rgba(16, 185, 129, 0.15)"
-                      : "rgba(239, 68, 68, 0.15)",
-                  color:
-                    event.status === "FEATURED"
-                      ? "#eab308"
-                      : event.status === "ACTIVE"
-                      ? "#10b981"
-                      : "#ef4444",
+                  backgroundColor: statusColors.bg,
+                  color: statusColors.fg,
                 }}
               >
                 {event.status}
               </span>
             </div>
             <h2
+              id={titleId}
               style={{
                 fontSize: "22px",
                 fontWeight: "bold",
@@ -378,6 +428,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               }}
             >
               {event.startTime || "Scheduled Drive"}
+              {event.endTime ? ` – ${event.endTime}` : ""}
             </div>
           </div>
 
@@ -678,6 +729,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           }}
         >
           <button
+            type="button"
             onClick={() => onDeleteEvent(event.id)}
             style={{
               backgroundColor: "rgba(239, 68, 68, 0.15)",
@@ -694,28 +746,37 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           </button>
 
           <div style={{ display: "flex", gap: "10px" }}>
-            {transition ? (
-              <button
-                onClick={() => onToggleStatus(event.id)}
-                style={{
-                  backgroundColor: transition.destructive ? "#7f1d1d" : "#6366f1",
-                  color: "white",
-                  border: "none",
-                  padding: "10px 18px",
-                  borderRadius: "10px",
-                  fontSize: "13px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
-              >
-                {transition.label} Drive
-              </button>
+            {actions.length > 0 ? (
+              actions.map(def => (
+                <button
+                  key={def.action}
+                  type="button"
+                  onClick={() => onEventAction(event.id, def.action)}
+                  style={{
+                    backgroundColor:
+                      def.tone === "danger"
+                        ? "#7f1d1d"
+                        : def.tone === "positive"
+                        ? "#065f46"
+                        : "#6366f1",
+                    color: "white",
+                    border: "none",
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                  }}
+                >
+                  {def.label}
+                </button>
+              ))
             ) : (
               <span
-                style={{ fontSize: "12px", color: "#64748b", alignSelf: "center" }}
-                title="This state is managed by the organizer or the platform lifecycle."
+                style={{ fontSize: "12px", color: "#94a3b8", alignSelf: "center" }}
+                title="Completed and cancelled drives are final."
               >
-                {event.status} — no admin transition
+                {event.status} — read-only
               </span>
             )}
             <button

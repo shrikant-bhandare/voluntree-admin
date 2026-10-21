@@ -3,11 +3,17 @@
 import React from "react";
 import { AttendanceLog } from "../../types";
 import { exportToCsv } from "../../utils/csvExporter";
-import { API_BASE_URL } from "../../config/constants";
+import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "../../config/constants";
+import { TruncationNote } from "../common/FeedStatus";
 
 interface AttendanceTabProps {
   attendanceLogs: AttendanceLog[];
+  /** Exact completed-session count from /admin/stats. */
+  completedSessions?: number;
+  hasMore: boolean;
   token: string | null;
+  onCloseSession: (id: string) => void;
+  onSessionExpired: () => void;
 }
 
 /**
@@ -15,12 +21,23 @@ interface AttendanceTabProps {
  * send — every click used to open a tab showing a 401. Fetch with the header
  * and hand the browser a blob instead.
  */
-async function downloadCertificate(token: string, attendanceId: string) {
+async function downloadCertificate(
+  token: string,
+  attendanceId: string,
+  onSessionExpired: () => void
+) {
   try {
     const res = await fetch(
       `${API_BASE_URL}/attendance/certificate/${attendanceId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      }
     );
+    if (res.status === 401) {
+      onSessionExpired();
+      return;
+    }
     if (!res.ok) {
       alert(`Could not download the certificate (HTTP ${res.status}).`);
       return;
@@ -33,7 +50,8 @@ async function downloadCertificate(token: string, attendanceId: string) {
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
+    // Some browsers abort the download if the URL is revoked synchronously.
+    window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
   } catch {
     alert("Could not download the certificate — network error.");
   }
@@ -41,7 +59,11 @@ async function downloadCertificate(token: string, attendanceId: string) {
 
 export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   attendanceLogs,
+  completedSessions,
+  hasMore,
   token,
+  onCloseSession,
+  onSessionExpired,
 }) => {
   return (
     <div
@@ -70,7 +92,8 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         >
           Volunteer Hours & Attendance Log
         </h3>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <TruncationNote shown={attendanceLogs.length} hasMore={hasMore} noun="sessions" />
           <button
             onClick={() =>
               exportToCsv(
@@ -123,7 +146,10 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
               fontWeight: "bold",
             }}
           >
-            Total Sessions: {attendanceLogs.length}
+            Completed Sessions:{" "}
+            {typeof completedSessions === "number"
+              ? completedSessions.toLocaleString("en-IN")
+              : "—"}
           </div>
         </div>
       </div>
@@ -208,7 +234,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                   textAlign: "right",
                 }}
               >
-                Certificate
+                Action
               </th>
             </tr>
           </thead>
@@ -279,7 +305,10 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                 <td style={{ padding: "14px 8px", textAlign: "right" }}>
                   {log.checkOut ? (
                     <button
-                      onClick={() => token && downloadCertificate(token, log.id)}
+                      type="button"
+                      onClick={() =>
+                        token && downloadCertificate(token, log.id, onSessionExpired)
+                      }
                       style={{
                         color: "#6366f1",
                         fontSize: "12px",
@@ -294,9 +323,22 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                       📄 Download PDF
                     </button>
                   ) : (
-                    <span style={{ fontSize: "11px", color: "#64748b" }}>
-                      N/A
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onCloseSession(log.id)}
+                      style={{
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #eab308",
+                        color: "#fde68a",
+                        padding: "5px 10px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Close session
+                    </button>
                   )}
                 </td>
               </tr>

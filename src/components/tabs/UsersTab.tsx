@@ -3,11 +3,19 @@
 import React from "react";
 import { PlatformUser } from "../../types";
 import { exportToCsv } from "../../utils/csvExporter";
+import { LoadMoreButton, TruncationNote } from "../common/FeedStatus";
 
 interface UsersTabProps {
   usersList: PlatformUser[];
-  /** Exact count from /admin/stats; usersList is only the newest page. */
+  /** Exact count from /admin/stats (unset while searching). */
   totalRegistered?: number;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+  /** Server-side search over name, email and phone (debounced upstream). */
+  search: string;
+  onSearchChange: (value: string) => void;
+  isSearching: boolean;
   adminUser: any;
   onToggleUserBan: (id: string, currentBanStatus: boolean) => void;
 }
@@ -15,9 +23,16 @@ interface UsersTabProps {
 export const UsersTab: React.FC<UsersTabProps> = ({
   usersList,
   totalRegistered,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  search,
+  onSearchChange,
+  isSearching,
   adminUser,
   onToggleUserBan,
 }) => {
+  const searching = search.trim().length > 0;
   return (
     <div
       style={{
@@ -34,6 +49,8 @@ export const UsersTab: React.FC<UsersTabProps> = ({
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "20px",
+          flexWrap: "wrap",
+          gap: "12px",
         }}
       >
         <h3
@@ -46,7 +63,29 @@ export const UsersTab: React.FC<UsersTabProps> = ({
         >
           Volunteer & Organizer Control
         </h3>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <label htmlFor="users-search" style={{ position: "absolute", left: "-9999px" }}>
+            Search users
+          </label>
+          <input
+            id="users-search"
+            type="search"
+            placeholder="Search name, email or phone…"
+            value={search}
+            onChange={e => onSearchChange(e.target.value)}
+            style={{
+              backgroundColor: "#0b0f19",
+              border: "1px solid #334155",
+              color: "white",
+              padding: "7px 12px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              width: "230px",
+            }}
+          />
+          {isSearching && (
+            <span style={{ fontSize: "12px", color: "#94a3b8" }}>Searching…</span>
+          )}
           <button
             onClick={() =>
               exportToCsv(
@@ -84,25 +123,19 @@ export const UsersTab: React.FC<UsersTabProps> = ({
           >
             📥 Export Users CSV
           </button>
-          <span style={{ fontSize: "12px", color: "#cbd5e1" }}>
-            {typeof totalRegistered === "number" && totalRegistered > usersList.length ? (
-              <>
-                Showing newest <strong>{usersList.length}</strong> of{" "}
-                <strong>{totalRegistered}</strong> registered
-              </>
-            ) : (
-              <>
-                Total Registered: <strong>{totalRegistered ?? usersList.length}</strong>
-              </>
-            )}
-          </span>
+          <TruncationNote
+            shown={usersList.length}
+            hasMore={hasMore}
+            total={totalRegistered}
+            noun={searching ? "matching users" : "registered users"}
+          />
         </div>
       </div>
 
       {usersList.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px 0" }}>
           <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>
-            No users found on the platform.
+            {searching ? `No users match "${search.trim()}".` : "No users found on the platform."}
           </p>
         </div>
       ) : (
@@ -293,7 +326,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                         {user.isBanned ? "Reactivate" : "Suspend Account"}
                       </button>
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#475569" }}>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>
                         No Actions
                       </span>
                     )}
@@ -304,6 +337,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
           </tbody>
         </table>
       )}
+      <LoadMoreButton hasMore={hasMore} loading={loadingMore} onLoadMore={onLoadMore} />
     </div>
   );
 };

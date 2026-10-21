@@ -23,9 +23,16 @@ export interface NGO {
   registrationDocs: string;
   /** Private-bucket URL of the identity proof. Both must be reviewed before approval. */
   identityProof: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: NgoStatus;
+  /** Formatted createdAt — does not move when the applicant resubmits. */
   submittedAt: string;
+  /** Formatted updatedAt — moves on resubmission and on each decision. */
+  updatedAt: string;
+  /** Formatted verifiedAt (APPROVED rows), or "". */
+  verifiedAt: string;
 }
+
+export type NgoStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 /** Mirrors the Prisma EventStatus enum. */
 export type EventStatusValue =
@@ -75,8 +82,17 @@ export interface EventItem {
 
 export interface SafetyReport {
   id: string;
-  eventId: string;
+  /** EVENT reports target a drive; USER reports target an account. */
+  targetType: "EVENT" | "USER";
+  /** null for USER reports. */
+  eventId: string | null;
   eventName: string;
+  eventStatus?: EventStatusValue;
+  organizerName?: string;
+  organizerEmail?: string;
+  targetUser?: { id: string; fullName: string; email: string } | null;
+  messageId?: string | null;
+  reporterEmail?: string;
   /** Free-form on the backend (CreateReportDto only bounds the length). */
   category: string;
   reporter: string;
@@ -164,3 +180,23 @@ export interface AdminStats {
 
 /** Page size the dashboard requests; lists longer than this are truncated. */
 export const LIST_PAGE_SIZE = 100;
+
+/** The list feeds the dashboard polls. */
+export type FeedName =
+  | "stats"
+  | "events"
+  | "reports"
+  | "payments"
+  | "ngos"
+  | "users"
+  | "attendance"
+  | "broadcasts";
+
+/** Per-feed sync health: has it ever loaded, and how did the last try end. */
+export interface FeedHealth {
+  loaded: boolean;
+  /** HTTP status of the last failure, 0 = network, -1 = timed out. */
+  lastErrorStatus: number | null;
+  /** Cursor for the page after the first one, from the last poll. */
+  nextCursor: string | null;
+}

@@ -61,7 +61,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               padding: "12px 14px",
               borderRadius: "10px",
               fontSize: "14px",
-              outline: "none",
             }}
           >
             <option value={10}>10 seconds (recommended)</option>

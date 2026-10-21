@@ -3,17 +3,25 @@
 import React from "react";
 import { PaymentTransaction } from "../../types";
 import { exportToCsv } from "../../utils/csvExporter";
+import { formatMoney } from "../../utils/format";
+import { LoadMoreButton, TruncationNote } from "../common/FeedStatus";
 
 interface PaymentsTabProps {
   transactions: PaymentTransaction[];
   totalRevenue: number;
   pendingPaymentsCount: number;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
 }
 
 export const PaymentsTab: React.FC<PaymentsTabProps> = ({
   transactions,
   totalRevenue,
   pendingPaymentsCount,
+  hasMore,
+  loadingMore,
+  onLoadMore,
 }) => {
   return (
     <div
@@ -84,6 +92,13 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
           >
             📥 Export Payments CSV
           </button>
+          <div style={{ marginTop: "8px" }}>
+            <TruncationNote
+              shown={transactions.length}
+              hasMore={hasMore}
+              noun="transactions"
+            />
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: "12px" }}>
@@ -106,7 +121,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                 color: "#10b981",
               }}
             >
-              ₹{totalRevenue.toLocaleString()}
+              {formatMoney(totalRevenue, "INR")}
             </div>
           </div>
           <div
@@ -264,7 +279,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                     color: "#10b981",
                   }}
                 >
-                  ₹{tx.amount.toLocaleString()}
+                  {formatMoney(tx.amount, tx.currency)}
                 </td>
                 <td
                   style={{
@@ -314,6 +329,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
           </tbody>
         </table>
       )}
+      <LoadMoreButton hasMore={hasMore} loading={loadingMore} onLoadMore={onLoadMore} />
     </div>
   );
 };

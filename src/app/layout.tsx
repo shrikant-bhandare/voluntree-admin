@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Voluntree Admin Console | Volunteer Community Platform",
-  description: "Administrative console and real-time moderation dashboard for managing volunteer community campaigns, host NGO verifications, platform users, safety operations, and financial transactions.",
+  title: "Voluntree Admin Console",
+  description: "Administrative console for moderating Voluntree drives, NGO verifications, users, safety reports and payments.",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

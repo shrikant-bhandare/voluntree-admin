@@ -3,25 +3,33 @@
 import React, { useState, useMemo } from "react";
 import { EventItem, LIST_PAGE_SIZE } from "../../types";
 import { exportToCsv } from "../../utils/csvExporter";
-import { ALL_EVENT_STATUSES, nextAdminStatus } from "../../utils/eventStatus";
+import {
+  ALL_EVENT_STATUSES,
+  AdminEventAction,
+  adminEventActions,
+  eventStatusColors,
+} from "../../utils/eventStatus";
 
 interface EventsTabProps {
   events: EventItem[];
   /** Exact count from /admin/stats; the list itself is one page. */
   totalOnPlatform?: number;
+  /** The API reported more drives than the loaded page. */
+  hasMore?: boolean;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onSelectEvent: (event: EventItem) => void;
-  onToggleStatus: (id: string) => void;
+  onEventAction: (id: string, action: AdminEventAction) => void;
 }
 
 export const EventsTab: React.FC<EventsTabProps> = ({
   events,
   totalOnPlatform,
+  hasMore = false,
   searchQuery,
   setSearchQuery,
   onSelectEvent,
-  onToggleStatus,
+  onEventAction,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
@@ -29,7 +37,8 @@ export const EventsTab: React.FC<EventsTabProps> = ({
   // Summary Metrics (over the loaded page)
   const totalCampaigns = totalOnPlatform ?? events.length;
   const truncated =
-    typeof totalOnPlatform === "number" && totalOnPlatform > events.length;
+    hasMore ||
+    (typeof totalOnPlatform === "number" && totalOnPlatform > events.length);
   const activeCount = events.filter(e => e.status === "ACTIVE").length;
   const featuredCount = events.filter(e => e.status === "FEATURED").length;
   const totalEnrolled = events.reduce((sum, e) => sum + (e.approvedCount || 0), 0);
@@ -218,7 +227,9 @@ export const EventsTab: React.FC<EventsTabProps> = ({
             <p style={{ fontSize: "12px", color: "#94a3b8", margin: "4px 0 0 0" }}>
               Showing {filteredEvents.length} of {events.length} loaded drives
               {truncated &&
-                ` (newest ${LIST_PAGE_SIZE} of ${totalOnPlatform} on the platform)`}
+                ` — showing newest ${Math.min(events.length, LIST_PAGE_SIZE)}${
+                  typeof totalOnPlatform === "number" ? ` of ${totalOnPlatform}` : ""
+                } on the platform`}
             </p>
           </div>
 
@@ -234,7 +245,6 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                 padding: "8px 12px",
                 borderRadius: "8px",
                 fontSize: "12px",
-                outline: "none",
               }}
             >
               {categoriesList.map(cat => (
@@ -255,7 +265,6 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                 padding: "8px 12px",
                 borderRadius: "8px",
                 fontSize: "12px",
-                outline: "none",
               }}
             >
               <option value="ALL">All Statuses</option>
@@ -280,7 +289,6 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                 borderRadius: "8px",
                 fontSize: "12px",
                 width: "200px",
-                outline: "none",
               }}
             />
 
@@ -437,19 +445,25 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                   style={{ borderBottom: "1px solid #1e293b" }}
                 >
                   <td style={{ padding: "16px 8px" }}>
-                    <div
+                    <button
+                      type="button"
                       onClick={() => onSelectEvent(evt)}
                       style={{
                         fontWeight: "bold",
                         cursor: "pointer",
                         color: "white",
                         transition: "color 0.2s",
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        textAlign: "left",
+                        font: "inherit",
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.color = "#6366f1")}
+                      onMouseEnter={e => (e.currentTarget.style.color = "#818cf8")}
                       onMouseLeave={e => (e.currentTarget.style.color = "white")}
                     >
                       {evt.name}
-                    </div>
+                    </button>
                     <div
                       style={{
                         fontSize: "11px",
@@ -554,18 +568,8 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                         padding: "3px 6px",
                         borderRadius: "4px",
                         fontWeight: "bold",
-                        backgroundColor:
-                          evt.status === "FEATURED"
-                            ? "rgba(234, 179, 8, 0.15)"
-                            : evt.status === "ACTIVE"
-                            ? "rgba(16, 185, 129, 0.15)"
-                            : "rgba(236, 72, 153, 0.15)",
-                        color:
-                          evt.status === "FEATURED"
-                            ? "#eab308"
-                            : evt.status === "ACTIVE"
-                            ? "#10b981"
-                            : "#ec4899",
+                        backgroundColor: eventStatusColors(evt.status).bg,
+                        color: eventStatusColors(evt.status).fg,
                       }}
                     >
                       {evt.status}
@@ -589,28 +593,46 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                       👁️ Inspect
                     </button>
                     {(() => {
-                      const transition = nextAdminStatus(evt.status);
-                      return transition ? (
+                      const actions = adminEventActions(evt.status);
+                      if (actions.length === 0) {
+                        return (
+                          <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                            Read-only ({evt.status.toLowerCase()})
+                          </span>
+                        );
+                      }
+                      return actions.map(def => (
                         <button
-                          onClick={() => onToggleStatus(evt.id)}
+                          key={def.action}
+                          type="button"
+                          onClick={() => onEventAction(evt.id, def.action)}
                           style={{
                             backgroundColor: "#1e293b",
-                            border: `1px solid ${transition.destructive ? "#ef4444" : "#334155"}`,
-                            color: transition.destructive ? "#fca5a5" : "white",
-                            padding: "6px 12px",
+                            border: `1px solid ${
+                              def.tone === "danger"
+                                ? "#ef4444"
+                                : def.tone === "positive"
+                                ? "#10b981"
+                                : "#334155"
+                            }`,
+                            color:
+                              def.tone === "danger"
+                                ? "#fca5a5"
+                                : def.tone === "positive"
+                                ? "#6ee7b7"
+                                : "white",
+                            padding: "6px 10px",
                             borderRadius: "6px",
                             cursor: "pointer",
                             fontSize: "12px",
                             fontWeight: "500",
+                            marginLeft: "6px",
+                            marginTop: "4px",
                           }}
                         >
-                          {transition.label}
+                          {def.label}
                         </button>
-                      ) : (
-                        <span style={{ fontSize: "11px", color: "#64748b" }}>
-                          No admin action
-                        </span>
-                      );
+                      ));
                     })()}
                   </td>
                 </tr>
