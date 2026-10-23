@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { EventStatusValue } from "../types";
+import type { EventStatus as EventStatusValue } from "../types/admin";
 import {
   ALL_EVENT_STATUSES,
-  EVENT_STATUS_COLORS,
   adminEventActions,
   oneLine,
 } from "./eventStatus";
@@ -67,10 +66,4 @@ describe("adminEventActions", () => {
     expect(oneLine("a".repeat(200)).length).toBe(80);
   });
 
-  it("gives FULL, COMPLETED, SUSPENDED and CANCELLED distinct badge colours", () => {
-    const colours = (["FULL", "COMPLETED", "SUSPENDED", "CANCELLED"] as const).map(
-      s => EVENT_STATUS_COLORS[s].fg
-    );
-    expect(new Set(colours).size).toBe(4);
-  });
 });

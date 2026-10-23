@@ -1,89 +1,187 @@
-/* Modern Dark Theme Design System for Volunteer Platform Admin Dashboard */
+@import "tailwindcss";
 
-:root {
-  --bg-primary: #0b0f19;
-  --bg-secondary: #131a2c;
-  --bg-tertiary: #1b243b;
-  --accent-primary: #6366f1; /* Indigo */
-  --accent-primary-hover: #4f46e5;
-  --accent-secondary: #ec4899; /* Pink */
-  --success: #10b981; /* Emerald */
-  --success-bg: rgba(16, 185, 129, 0.1);
-  --warning: #f59e0b; /* Amber */
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --border-color: #334155;
-  --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/*
+ * Voluntree admin console — tokens from DESIGN.md ("The Community Forest").
+ * Light mist surfaces, deep forest for structure and commitment, growth green
+ * for success, red only for real errors and destructive actions. Every colour
+ * in the console comes from here; components never carry raw hex values.
+ */
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  /* Forest */
+  --color-forest: #012d1d;
+  --color-forest-700: #1b4332;
+  --color-forest-300: #86af99;
+  --color-forest-200: #b9d3c4;
+
+  /* Growth (success, progress, confirming) */
+  --color-growth: #0e6c4a;
+  --color-growth-ink: #0b5a3d;
+  --color-mint: #a0f4c8;
+  --color-mint-soft: #dcf7ea;
+
+  /* Mist neutrals */
+  --color-canvas: #f4fafd;
+  --color-surface: #ffffff;
+  --color-sunken: #e8eff1;
+  --color-sunken-2: #dde4e6;
+  --color-ink: #161d1f;
+  --color-ink-2: #414844;
+  --color-ink-3: #5a625d;
+  --color-line: #c1c8c2;
+  --color-line-soft: #dde4e6;
+
+  /* Red is sacred: errors and destructive actions only */
+  --color-danger: #ba1a1a;
+  --color-danger-ink: #93000a;
+  --color-danger-soft: #ffdad6;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-card: 0 4px 20px rgba(27, 67, 50, 0.05);
+  --shadow-overlay: 0 8px 30px rgba(27, 67, 50, 0.12);
+  --shadow-press: 0 1px 2px rgba(27, 67, 50, 0.12);
+
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
+  --text-meta: 0.875rem;
+  --text-meta--line-height: 1.25rem;
+  --text-row: 0.9375rem;
+  --text-row--line-height: 1.375rem;
+
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5rem;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01" on;
+  }
+
+  ::selection {
+    background: var(--color-mint);
+    color: var(--color-forest);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-forest);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  input,
+  textarea {
+    caret-color: var(--color-forest);
+  }
+
+  ::placeholder {
+    color: var(--color-ink-3);
+    opacity: 1;
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-main);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  min-height: 100vh;
-  overflow-x: hidden;
+@layer utilities {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-sunken) 0%,
+      var(--color-sunken-2) 50%,
+      var(--color-sunken) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton 1.4s ease-in-out infinite;
+  }
+
+  .enter-up {
+    animation: enter-up 220ms var(--ease-out-quint) both;
+  }
+
+  .enter-right {
+    animation: enter-right 240ms var(--ease-out-quint) both;
+  }
+
+  .enter-fade {
+    animation: enter-fade 180ms ease-out both;
+  }
 }
 
-/* Visible keyboard focus everywhere (inline styles no longer remove it). */
-:focus-visible {
-  outline: 2px solid #818cf8;
-  outline-offset: 2px;
-}
-
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: 2px solid #818cf8;
-  outline-offset: 1px;
-  border-color: #818cf8;
-}
-
-/* Glassmorphism utility */
-.glass-panel {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-}
-
-/* Animations */
-@keyframes fadeIn {
+@keyframes skeleton {
   from {
-    opacity: 0;
-    transform: translateY(10px);
+    background-position: 100% 0;
   }
   to {
-    opacity: 1;
-    transform: translateY(0);
+    background-position: -100% 0;
   }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+@keyframes enter-right {
+  from {
+    opacity: 0.4;
+    transform: translateX(24px);
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+  }
 }

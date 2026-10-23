@@ -1,4 +1,4 @@
-import { EventStatusValue } from "../types";
+import type { EventStatus as EventStatusValue } from "../types/admin";
 
 /**
  * Admin moderation actions on a drive, matching PATCH /events/:id/status in
@@ -96,22 +96,6 @@ export function findEventAction(
   action: AdminEventAction
 ): EventActionDef | null {
   return adminEventActions(status).find(d => d.action === action) ?? null;
-}
-
-/** Distinct badge colours per status. */
-export const EVENT_STATUS_COLORS: Record<EventStatusValue, { fg: string; bg: string }> = {
-  ACTIVE: { fg: "#10b981", bg: "rgba(16, 185, 129, 0.15)" },
-  FEATURED: { fg: "#eab308", bg: "rgba(234, 179, 8, 0.15)" },
-  FULL: { fg: "#38bdf8", bg: "rgba(56, 189, 248, 0.15)" },
-  CLOSED: { fg: "#fb923c", bg: "rgba(251, 146, 60, 0.15)" },
-  DRAFT: { fg: "#cbd5e1", bg: "rgba(203, 213, 225, 0.12)" },
-  COMPLETED: { fg: "#a78bfa", bg: "rgba(167, 139, 250, 0.15)" },
-  SUSPENDED: { fg: "#ef4444", bg: "rgba(239, 68, 68, 0.15)" },
-  CANCELLED: { fg: "#94a3b8", bg: "rgba(148, 163, 184, 0.15)" },
-};
-
-export function eventStatusColors(status: EventStatusValue) {
-  return EVENT_STATUS_COLORS[status] ?? { fg: "#ec4899", bg: "rgba(236, 72, 153, 0.15)" };
 }
 
 export const ALL_EVENT_STATUSES: EventStatusValue[] = [
